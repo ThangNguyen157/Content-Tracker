@@ -1,0 +1,1 @@
+len(content-1)

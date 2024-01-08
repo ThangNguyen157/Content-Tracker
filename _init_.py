@@ -1,7 +1,7 @@
 import bs4
 import requests
 from lxml import etree
-text = []
+
 def getInput():
     url = input("Enter url of the page: ");
     while True:
@@ -26,7 +26,7 @@ def scraping(url):
     data = requests.get(splash_url, params = params)
 
     soup = bs4.BeautifulSoup(data.text, "html.parser")
-    return soup
+    return soup, data
 
 def getinput2(length):
     while True:
@@ -40,26 +40,28 @@ def getinput2(length):
             print("Invalid input. Try again")
     return number
 
-
 def main():
     url, timeInterval = getInput()
-    html = scraping(url)
-
+    html, data = scraping(url)
+    
     text = []
     indeces = []
     content = list(html.descendants)
 
+    #filter to get only the text in the content list
     for index, value in enumerate(content):
         if type(value) == bs4.element.NavigableString and not value.isspace():
             while '\n' in value:
                 value = value.replace('\n', "")
             text.append(value)
             indeces.append(index)
+    
     for index, value in enumerate(text):
         print(str(index+1) + ". " + value)
 
     number = getinput2(len(text))
-    print(content[indeces[number-1]-1].parent)
+    
+    #print (content[indeces[number-1]-1].parent.contents)
     
 
 if __name__ == "__main__":

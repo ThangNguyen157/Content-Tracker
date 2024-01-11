@@ -1,6 +1,6 @@
 import bs4
 import requests
-from lxml import etree
+from flask import Flask
 
 def getInput():
     url = input("Enter url of the page: ");

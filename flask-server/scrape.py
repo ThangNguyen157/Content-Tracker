@@ -67,12 +67,7 @@ class Scrape:
         newTag = soup.new_tag('style')
         newTag.string = '.change:hover { background-color: #ffff80; color: black}'
         soup.head.append(newTag)
-            #soup.body.name = 'div'
-        body_tags = soup.body.find_all(recursive=False)
-
-        # Concatenate the string representations of each tag
-        body_content = ''.join(str(tag) for tag in body_tags)
-        return str(soup.prettify()), styleTag, cssTag
+        return str(soup.prettify())
 '''
 d = Scrape('https://www.ebay.com/itm/204274527497?var=504836709828&_trkparms=amclksrc%3DITM%26aid%3D777008%26algo%3DPERSONAL.TOPIC%26ao%3D1%26asc%3D20230823115209%26meid%3Dacd787ba9434468db0ee2d96a67ecfe6%26pid%3D101800%26rk%3D1%26rkt%3D1%26sd%3D204274527497%26itm%3D504836709828%26pmt%3D1%26noa%3D1%26pg%3D4375194%26algv%3DRecentlyViewedItemsV2SignedOut%26brand%3DBrand&_trksid=p4375194.c101800.m5481&_trkparms=parentrq%3Ad6dd115518c0ab8e1eac1286ffff66ba%7Cpageci%3A2f056412-ab5b-11ee-8541-92c4b5d57a12%7Ciid%3A1%7Cvlpname%3Avlp_homepage', 10, 'koio')
 
@@ -80,37 +75,3 @@ a = d.scrape()
 print(a)
 b = d.getModifiedHTMLCSS(a)
 print(b)'''
-
-'''
-def getInput():
-    url = input("Enter url of the page: ");
-    while True:
-        try:
-            time_interval = int(input("How often do want the website to be checked(in minutes)?(At least every 10 mins): "))        
-            if time_interval >= 10:
-                break
-            else:
-                print("Must be at least every 10 mins.")
-        except ValueError:
-            print("Invalid input. Try again.")
-    return url, time_interval
-
-
-
-def main():
-    url, timeInterval = getInput()
-    html, data = scraping(url)
-
-    
-    
-    for index, value in enumerate(text):
-        print(str(index+1) + ". " + value)
-
-    number = getinput2(len(text))
-    
-    #print (content[indeces[number-1]-1].parent.contents)
-    
-
-if __name__ == "__main__":
-    main()
-'''

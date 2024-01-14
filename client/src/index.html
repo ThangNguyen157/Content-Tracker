@@ -6,14 +6,18 @@
     <title>content tracker</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <!-- Load React. -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="text/babel" src="index.js"></script>
+    <script>var exports = {};</script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel" src="index.js"></script>
 </head>
 <body>
+    <span id="forStyle"></span>
+    <span id="forcss"></span>
     <h2 class = "header color">Simple content Tracker</h2>
     <div class = "hero">
+        <div class="heroGroup">
         <div class = "heroText">
             <p class = "heroMainText">Hi there!</p>
             <p class = "heroSubText">This is a simple webpage content tracker that can only track changes of text appears in the page. The given webpage will be check after each time interval to see if the chosen text has been changed. You will receive an email when the change is detected.<br><span class = "heroSubText2">Fill out the fields on the left to get started</span></p>
@@ -31,9 +35,13 @@
             </form>-->
             
         </div>
+        </div>
+        <div id="loading"></div>
     </div>
-    <script type="text/babel">
-       
-    </script>
+    <!--<div id="response">
+
+    </div>-->
+    <br><br>
+    <p style="text-align: center;" id="frame"></p>
 </body>
 </html>

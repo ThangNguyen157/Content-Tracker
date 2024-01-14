@@ -1,4 +1,8 @@
-class MyForm extends React.Component {
+//import React from 'react';
+//import ReactDOM from 'react-dom';
+//import './style.css'
+
+/*class MyForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -31,12 +35,29 @@ class MyForm extends React.Component {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({Link: this.state.webpageLink, time: this.state.timeInterval, clientEmail : this.state.email }),
+      body: JSON.stringify({'link': this.state.webpageLink, 'time': this.state.timeInterval, 'clientEmail' : this.state.email }),
     })
-      .then(response => response.json())
+      .then(res => {
+        // Check if the response status is OK
+        if (!res.ok) {
+          logs()
+        } else {
+          logs()
+        }
+        return res.json();
+      })
       .then(result => {
-        console.log(result);
+        logs()
         // Handle the response from the Flask backend
+        if ((typeof result['value']) == 'number') {
+          generateError(result['value'])
+          console.log("errorrrrr")
+        } else {
+          console.log("success1");
+          var tag = document.getElementById("response");
+          tag.innerHTML = result['value'].toString()
+          console.log("success2")
+        }
       })
       .catch(error => {
         console.error('Error:', error);
@@ -44,6 +65,7 @@ class MyForm extends React.Component {
   };
 
   render() {
+    console.log("22222")
     return (
     <>
       <form onSubmit={this.handleSubmit}>
@@ -59,15 +81,17 @@ class MyForm extends React.Component {
     );
   }
 
+}*/
+
+function generateError() {
+  ReactDOM.render(<ErrorMessage/>, document.querySelector('#response'));
 }
 
-ReactDOM.render(<MyForm/>, document.querySelector('#form'));
-/*
 const MyForm = () => {
   // Use useState for each input field
-  const [webpageLink, setwebpageLink] = useState('');
-  const [timeInterval, settimeInterval] = useState('');
-  const [email, setEmail] = useState('');
+  const [webpageLink, setwebpageLink] = React.useState('');
+  const [timeInterval, settimeInterval] = React.useState('');
+  const [email, setEmail] = React.useState('');
 
   // Event handler for the first input field
   const handleInputChange1 = (event) => {
@@ -84,43 +108,79 @@ const MyForm = () => {
   };
 
   // Submit handler
-  const handleSubmit = () => {
+  const handleSubmit = (event) => {
+    //cancel the default submit action of the form, if the page is reloading.
+    //somehow fixed the error of console.log not running
+    event.preventDefault();
+
+    var loading = document.getElementById("loading");
+    loading.innerHTML = '<span class="loading heroLoading"></span>';
+    //'<span class="loading heroLoading"></span>' will automatically 
+    //disappear when reload since it is written inside that tag in the DOM not inside the actual html file
     // Send data to Flask backend
-    fetch('api/data', {
+    fetch('http://127.0.0.1:5000/data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ Link: webpageLink, time: timeInterval, clientEmail : email }),
+      body: JSON.stringify({ link: webpageLink, time: timeInterval, clientEmail : email }),
     })
       .then(response => response.json())
       .then(result => {
         console.log(result);
         // Handle the response from the Flask backend
+        if ((typeof result['value']) === 'number' || result['value'] === 'DNS address could not be found') {
+          frame.innerHTML = 'error: ' + result['value'] + '<br>The webpage might not exist or is currently down, or do not allow web scraping.<br>Please check the provided link, try again or choose another webpage.'
+        } else {
+          loading.innerHTML = '';
+          frame.innerHTML = '<iframe id="externalFrame" src="viewpage.html" style="width:80%; height: 700px;"></iframe><br><br><button onclick="sendSelected();">Finish</button>';
+        }
       })
       .catch(error => {
         console.error('Error:', error);
       });
   };
-
   return (
-    <span>
-      <form>
+    <>
+      <form onSubmit={handleSubmit}>
          <label for ="webpageLink"><p class = "heroSubText color">Link to the webpage:</p></label>
           <input type="text" value ={webpageLink} onChange={handleInputChange1} name="webpageLink" id = "webpageLink" size = "50px" maxlength="9999" required/>
-          <label for="timeInterval"><p class = "inputText color">Time interval (minutes):</p><p  class = "heroSubText color" style = "font-size: 15px;">The webpage will be check after every this amount of time. Minimum is 10 mins to avoid any bad consequences due to web scraping.</p></label>
-          <input type="number" value={timInterval} onChange={handleInputChange2} id="timeInterval" name="timeInterval" min="10" max = "999999"step="1" placeholder="10-999999" required/>
+          <label for="timeInterval"><p class = "inputText color">Time interval (minutes):</p><p  class = "inputSubText color">The webpage will be check after every this amount of time. Minimum is 10 mins to avoid any bad consequences due to web scraping.</p></label>
+          <input type="number" value={timeInterval} onChange={handleInputChange2} id="timeInterval" name="timeInterval" min="10" max = "999999"step="1" placeholder="10-999999" required/>
           <label for ="email"><p class = "inputText color">Email:</p></label>
           <input type = "email" value={email} onChange={handleInputChange3} id="email" name="email" required size = "50px"/><br/>
-          <input type = "submit" value = "GO!" class = "button color" onClick={handleSubmit}/>
+          <input type = "submit" value = "GO!" class = "button color"/>
       </form>
-    </span>
+    </>
   );
 };
 
-const domContainer = document.querySelector('#root');
-const root = ReactDOM.createRoot(domContainer);
-root.render(e(LikeButton));
+ReactDOM.render(<MyForm/>, document.querySelector('#form'));
 
-export default MyForm;
-*/
+
+
+function sendSelected(){
+
+  var frame = document.getElementById("externalFrame");
+  console.log(11111111111111111);
+  console.log(frame.contentWindow.ids);
+
+
+  fetch('http://127.0.0.1:5000/tags', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ids: frame.contentWindow.ids}),
+  })
+    .then(response => response.json())
+    .then(result => {
+      console.log(result);
+      // Handle the response from the Flask backend
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
+export default MyForm

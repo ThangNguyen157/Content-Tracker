@@ -51,17 +51,21 @@ def data():
                  next_run timestamp without time zone,
                  id text[],
                  tag text[])''')
+    
     insertQuery ='''INSERT INTO data (url, email, interval, time, next_run) VALUES (%s, %s, %s, %s, %s)'''
     value = (data['link'], data['clientEmail'], data['time'], notTimeZoneAware, newTime)
     #use place holder method to avoid SQL injecion
     cur.execute(insertQuery, value)
+
     conn.commit()
     conn.close()
     cur.close()
-    html = spider.getModifiedHTMLCSS(content)
+
+    html = spider.getModifiedHTML(content)
+    htmlstr = str(html.prettify())
     with open("../client/src/viewpage.html", 'w', encoding="utf-8") as file:
-        file.write(html)
-    return {'value':html}
+        file.write(htmlstr)
+    return {'value':htmlstr}
 
 def getTagsByIDs(ids):
     with open('../client/src/viewpage.html','r') as f:

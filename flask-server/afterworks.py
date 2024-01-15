@@ -6,13 +6,26 @@ from dotenv import load_dotenv
 import datetime
 import time
 
-def getSleepTime(conn, cur):
-    cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1;"''')
-    time = cur.fetchone()[0]
+def getSleepTime(cur):
+    cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1''')
+    dataDB = cur.fetchone()
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
-    diff = time - notTimeZoneAware
-    return diff.total_seconds()
+    diff = dataDB[4] - notTimeZoneAware
+    return diff.total_seconds(), dataDB
 
+def checkContent(cur, dataDB):
+    newValue = []
+    oldValue = []
+    data = Scrape(dataDB[0])
+    content = data.scrape()
+    soup = data.getModifiedHTML(content)
+    for index, id in enumerate(data[5]):
+        minisoup = BeautifulSoup(data[6][index], 'html.parser')
+        tag = soup.find(id=id)
+        if (tag.get_text() != minisoup.get_text()):
+            oldValue.append(tag.get_text())
+            newValue.append(minisoup.get_text())
+    return newValue, oldValue
 
 def main():
     load_dotenv()
@@ -21,11 +34,13 @@ def main():
     cur = conn.cursor()
 
     while True:
-        
-        cur.execute()
-        seconds = getSleepTime(conn, cur)
+        seconds, dataDB = getSleepTime(cur)
         if (seconds > 4):
             break
+        oldValue, newValue = checkContent(cur, dataDB)
+
+        cur.execute()
+        
     
     conn.commit()
     conn.close()

@@ -24,7 +24,7 @@ class Scrape:
         soup = bs4.BeautifulSoup(data.text, "html.parser")
         return soup
     
-    def getModifiedHTMLCSS(self, soup):
+    def getModifiedHTML(self, soup):
         imgs = soup.find_all('img')
         for img in imgs:
             img['src'] = 'placeholer.png'
@@ -65,11 +65,11 @@ class Scrape:
         newTag = soup.new_tag('style')
         newTag.string = '.change:hover { background-color: #ffff80; color: black}'
         soup.head.append(newTag)
-        return str(soup.prettify())
+        return soup
 '''
 d = Scrape('https://www.ebay.com/itm/204274527497?var=504836709828&_trkparms=amclksrc%3DITM%26aid%3D777008%26algo%3DPERSONAL.TOPIC%26ao%3D1%26asc%3D20230823115209%26meid%3Dacd787ba9434468db0ee2d96a67ecfe6%26pid%3D101800%26rk%3D1%26rkt%3D1%26sd%3D204274527497%26itm%3D504836709828%26pmt%3D1%26noa%3D1%26pg%3D4375194%26algv%3DRecentlyViewedItemsV2SignedOut%26brand%3DBrand&_trksid=p4375194.c101800.m5481&_trkparms=parentrq%3Ad6dd115518c0ab8e1eac1286ffff66ba%7Cpageci%3A2f056412-ab5b-11ee-8541-92c4b5d57a12%7Ciid%3A1%7Cvlpname%3Avlp_homepage', 10, 'koio')
 
 a = d.scrape()
 print(a)
-b = d.getModifiedHTMLCSS(a)
+b = d.getModifiedHTML(a)
 print(b)'''

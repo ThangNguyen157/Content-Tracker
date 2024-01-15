@@ -2,10 +2,8 @@ import bs4
 import requests
 
 class Scrape:
-    def __init__(self, url, timeInterval, email):
+    def __init__(self, url):
         self.url = url
-        self.timeInterval = timeInterval
-        self.email = email
     def scrape(self):
         splash_url = 'http://localhost:8050/render.html'
 

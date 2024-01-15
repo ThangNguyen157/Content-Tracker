@@ -95,7 +95,9 @@ const MyForm = () => {
 
   // Event handler for the first input field
   const handleInputChange1 = (event) => {
-    setwebpageLink(event.target.value);
+    // Remove spaces from the input value
+    var sanitizedValue = event.target.value.replace(/\s/g, '');
+    setwebpageLink(sanitizedValue);
   };
 
   // Event handler for the second input field
@@ -104,6 +106,7 @@ const MyForm = () => {
   };
 
   const handleInputChange3 = (event) => {
+    //the email input type will handle the input value. No need to sanitized the value.
     setEmail(event.target.value);
   };
 
@@ -112,7 +115,11 @@ const MyForm = () => {
     //cancel the default submit action of the form, if the page is reloading.
     //somehow fixed the error of console.log not running
     event.preventDefault();
-
+    var regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+    if (!email.match(regex)) {
+      alert("Invalid email format.");
+      return
+    }
     var loading = document.getElementById("loading");
     loading.innerHTML = '<span class="loading heroLoading"></span>';
     //'<span class="loading heroLoading"></span>' will automatically 
@@ -162,9 +169,12 @@ ReactDOM.render(<MyForm/>, document.querySelector('#form'));
 function sendSelected(){
 
   var frame = document.getElementById("externalFrame");
-  console.log(11111111111111111);
+  
   console.log(frame.contentWindow.ids);
-
+  if(Object.keys(frame.contentWindow.ids).length === 0) {
+    alert('Please select something before submiting');
+    return
+  }
 
   fetch('http://127.0.0.1:5000/tags', {
     method: 'POST',

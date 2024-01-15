@@ -4,10 +4,13 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import datetime
+from datetime import timedelta
 import time
+import copy
 
-def getSleepTime(cur):
+def getSleepTime(conn, cur):
     cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1''')
+    conn.commit()
     dataDB = cur.fetchone()
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
     diff = dataDB[4] - notTimeZoneAware
@@ -16,6 +19,7 @@ def getSleepTime(cur):
 def checkContent(cur, dataDB):
     newValue = []
     oldValue = []
+    changeType = []
     data = Scrape(dataDB[0])
     content = data.scrape()
     soup = data.getModifiedHTML(content)
@@ -23,9 +27,24 @@ def checkContent(cur, dataDB):
         minisoup = BeautifulSoup(data[6][index], 'html.parser')
         tag = soup.find(id=id)
         if (tag.get_text() != minisoup.get_text()):
-            oldValue.append(tag.get_text())
-            newValue.append(minisoup.get_text())
+            oldValue.append(tag)
+            newValue.append(minisoup)
     return newValue, oldValue
+
+def updateDB(conn, cur, dataDB, newValue=[]):
+    #list is mutable so need to make a copy to avoid changing the original list
+    nv = copy.copy(newValue)
+    notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
+    newNext_run = notTimeZoneAware + timedelta(minutes=dataDB[2])
+    for index, i in enumerate(dataDB[5]):
+        if i not in nv:
+            nv.insert(index, i)
+
+    if not nv:
+        cur.execute(f'''UPDATE data SET next_run = {newNext_run} WHERE data.time = {dataDB[3]}''')
+    else:
+        cur.execute(f'''UPDATE data SET next_run = {newNext_run}, tag = {nv} WHERE data.time = {dataDB[3]}''')
+    conn.commit()
 
 def main():
     load_dotenv()
@@ -34,15 +53,20 @@ def main():
     cur = conn.cursor()
 
     while True:
-        seconds, dataDB = getSleepTime(cur)
+        seconds, dataDB = getSleepTime(conn, cur)
         if (seconds > 4):
             break
         oldValue, newValue = checkContent(cur, dataDB)
 
-        cur.execute()
-        
+        if newValue:
+            updateDB(conn, cur, dataDB, newValue)
+            #send email,....
+            #check reply email,....
+        else:
+            updateDB(conn, cur, dataDB)
+
     
-    conn.commit()
+    
     conn.close()
     cur.close()
     time.sleep(seconds)

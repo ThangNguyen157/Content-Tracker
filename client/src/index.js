@@ -140,7 +140,7 @@ const MyForm = () => {
           frame.innerHTML = 'error: ' + result['value'] + '<br>The webpage might not exist or is currently down, or do not allow web scraping.<br>Please check the provided link, try again or choose another webpage.'
         } else {
           loading.innerHTML = '';
-          frame.innerHTML = '<iframe id="externalFrame" src="viewpage.html" style="width:80%; height: 700px;"></iframe><br><br><button onclick="sendSelected();">Finish</button>';
+          frame.innerHTML = '<iframe id="externalFrame" src="viewpage.html" style="width:80%; height: 700px;"></iframe><br><br><button class="button color" onclick="sendSelected();">Finish</button>';
         }
       })
       .catch(error => {
@@ -191,6 +191,7 @@ function sendSelected(){
     .catch(error => {
       console.error('Error:', error);
     });
+    location.reload();
 }
 
 export default MyForm

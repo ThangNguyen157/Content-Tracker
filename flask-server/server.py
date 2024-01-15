@@ -41,23 +41,23 @@ def data():
     load_dotenv()
     conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
                         password=os.getenv('PASSWORD'), port=os.getenv('PORT'))
-    curr = conn.cursor()
+    cur = conn.cursor()
 
-    curr.execute('''CREATE TABLE IF NOT EXISTS data (
+    cur.execute('''CREATE TABLE IF NOT EXISTS data (
                  url varchar(32779),
                  email varchar(320),
                  interval int,
-                 time TIMESTAMP,
+                 time TIMESTAMP PRIMARY KEY,
                  next_run timestamp without time zone,
-                 id integer[],
-                 tag varchar(50000))''')
+                 id text[],
+                 tag text[])''')
     insertQuery ='''INSERT INTO data (url, email, interval, time, next_run) VALUES (%s, %s, %s, %s, %s)'''
     value = (data['link'], data['clientEmail'], data['time'], notTimeZoneAware, newTime)
     #use place holder method to avoid SQL injecion
-    curr.execute(insertQuery, value)
+    cur.execute(insertQuery, value)
     conn.commit()
     conn.close()
-    curr.close()
+    cur.close()
     html = spider.getModifiedHTMLCSS(content)
     with open("../client/src/viewpage.html", 'w', encoding="utf-8") as file:
         file.write(html)
@@ -70,7 +70,7 @@ def getTagsByIDs(ids):
     soup = BeautifulSoup(data, "html.parser")
     tags = []
     for idd in ids:
-        tags.append(soup.find(id=idd).parent)
+        tags.append(str(soup.find(id=idd).parent))
     return tags
 
 @app.route("/tags", methods=['POST'])
@@ -79,7 +79,31 @@ def tags():
     tags = getTagsByIDs(data['ids'])
     with open("../client/src/viewpage.html", 'w', encoding="utf-8") as file:
         file.write('')
-    
+    conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
+                        password=os.getenv('PASSWORD'), port=os.getenv('PORT'))
+    cur = conn.cursor()
+    #select all row from the data table that is sorted in descending order by value in time column and then limit to 1 row(first row)(row with highest time stamp value)
+    #ORDER BY will not sort the table permanently
+    updateQuery= '''
+    WITH LastRow AS (
+        SELECT *
+        FROM data
+        ORDER BY time DESC
+        LIMIT 1
+    )
+    UPDATE data
+    SET id = %s,
+        tag = %s
+    FROM LastRow
+    WHERE data.time = LastRow.time
+'''
+    value = (data['ids'], tags)
+    #cur.execute('WITH LastRow AS (SELECT * FROM data ORDER BY time DESC LIMIT 1) SELECT LastRow FROM data')
+    cur.execute(updateQuery, value)
+    conn.commit()
+    conn.close()
+    cur.close()
+
     return {}
 if __name__ == "__main__":
     app.run(debug=True)

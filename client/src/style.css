@@ -2,10 +2,12 @@
     width: 100%;
     top: 0;
     left: 0;
+    right: 0;
     position: fixed;
     padding: 10px 200px;
     margin: 0;
     background-color: #1F2937;
+    border-bottom: 3px solid #3882F6;
 }
 
 .color, .heroText {
@@ -22,7 +24,7 @@ body {
     padding: 111px 200px 100px;
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 10%;
 }
 
 .heroGroup {
@@ -31,6 +33,7 @@ body {
     flex-direction: row;
     justify-content: center;
     align-items: center;
+    gap:10%;
 }
 
 .heroText {

@@ -13,8 +13,6 @@
     <script type="text/babel" src="index.js"></script>
 </head>
 <body>
-    <span id="forStyle"></span>
-    <span id="forcss"></span>
     <h2 class = "header color">Simple content Tracker</h2>
     <div class = "hero">
         <div class="heroGroup">
@@ -22,19 +20,7 @@
             <p class = "heroMainText">Hi there!</p>
             <p class = "heroSubText">This is a simple webpage content tracker that can only track changes of text appears in the page. The given webpage will be check after each time interval to see if the chosen text has been changed. You will receive an email when the change is detected.<br><span class = "heroSubText2">Fill out the fields on the left to get started</span></p>
         </div>
-        <div class = "input" id ="form">
-
-            <!-- <form>
-                <label for ="webpageLink"><p class = "heroSubText color">Link to the webpage:</p></label>
-                <input type="text" name="webpageLink" id = "webpageLink" size = "50px" maxlength="9999" required>
-                <label for="timeInterval"><p class = "inputText color">Time interval (minutes):</p><p  class = "heroSubText color" style = "font-size: 15px;">The webpage will be check after every this amount of time. Minimum is 10 mins to avoid any bad consequences due to web scraping.</p></label>
-                <input type="number" id="timeInterval" name="timeInterval" min="10" max = "999999"step="1" value="10" placeholder="10-999999" required>
-                <label for ="email"><p class = "inputText color">Email:</p></label>
-                <input type = "email" id="email" name="email" required size = "50px"><br>
-                <input type = "submit" value = "GO!" class = "button color">
-            </form>-->
-            
-        </div>
+        <div class = "input" id ="form"></div>
         </div>
         <div id="loading"></div>
     </div>

@@ -98,7 +98,6 @@ def tags():
     WHERE data.time = LastRow.time
 '''
     value = (data['ids'], tags)
-    #cur.execute('WITH LastRow AS (SELECT * FROM data ORDER BY time DESC LIMIT 1) SELECT LastRow FROM data')
     cur.execute(updateQuery, value)
     conn.commit()
     conn.close()

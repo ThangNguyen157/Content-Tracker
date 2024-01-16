@@ -1,12 +1,10 @@
 from scrape import Scrape
 from bs4 import BeautifulSoup
-import psycopg2
-import os
 from dotenv import load_dotenv
-import datetime
 from datetime import timedelta
-import time
-import copy
+import time, copy, smtplib, os, psycopg2, datetime, ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 def getSleepTime(conn, cur):
     cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1''')
@@ -97,6 +95,87 @@ def updateDB(conn, cur, dataDB, newTag=[]):
         cur.execute(f'''UPDATE data SET next_run = {newNext_run}, tag = {nv} WHERE data.time = {dataDB[3]}''')
     conn.commit()
 
+def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
+    message = MIMEMultipart()
+    message["From"] = os.getenv('SENDER_EMAIL')
+    message["To"] = email
+    message["Subject"] = 'Change(s) Detected'
+    HTML = f'''
+            <html>
+            <head>
+            </head>
+            <body>
+            <p>New change(s) detected at<a href={url}>the website</a> you provided</p>
+            <p style='text-align:center'>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Change Type</th>
+                            <th>Old Value</th>
+                            <th>New Value</th>
+                            <th>Old tag</th>
+                            <th>New tag</th>
+                        </tr>
+                    </thead>
+                </table>
+            </p>
+            <p style='text-align: center; font-weight:bold; font-size:20px'>To stop receving email, please visit <a href="content-tracker.com">content-tracker.com</a> and enter your email at the bottom field.</p>
+            </body>
+            </html>
+        '''
+    soup = BeautifulSoup(HTML, 'html.parser')
+    table = soup.find('table')
+    for l in oldTag:
+        new_row = soup.new_tag('tr')
+        td1 = soup.new_tag('td')
+        td1.string = changeType[i]
+        td2 = soup.new_tag('td')
+        td2.string = oldValue[i]
+        td3 = soup.new_tag('td')
+        td3.string = newValue[i]
+        td4 = soup.new_tag('td', rowspan=str(i))
+        td4.string = oldTag[i]
+        td5 = soup.new_tag('td', rowspan=str(i))
+        td5.string = newTag[i]
+        new_row.append(td1)
+        new_row.append(td2)
+        new_row.append(td3)
+        new_row.append(td4)
+        new_row.append(td5)
+        table.append(new_row)
+        for i in len(1, l):
+            new_row = soup.new_tag('tr')
+            td1 = soup.new_tag('td')
+            td1.string = changeType[i]
+            td2 = soup.new_tag('td')
+            td2.string = oldValue[i]
+            td3 = soup.new_tag('td')
+            td3.string = newValue[i]
+            new_row.append(td1)
+            new_row.append(td2)
+            new_row.append(td3)
+            table.append(new_row)
+    # Attach the HTML content
+    message.attach(MIMEText(HTML, "html"))
+    #secure the connection with SSL
+    context = ssl.create_default_context()
+
+    # Establish a connection to the SMTP server
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587, context=context) as server:
+            # Start the TLS connection
+            server.starttls()
+
+            # Login to your Gmail account
+            server.login(os.getenv('SENDER_EMAIL'), os.getenv('EMAIL_PASSWORD'))
+            # Send the email
+            server.sendmail(os.getenv('SENDER_EMAIL'), email, message.as_string())
+    except Exception as e:
+        print('error sending email: '+ e)
+    finally:
+        return 0;
+
+
 def main():
     load_dotenv()
     conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
@@ -111,8 +190,9 @@ def main():
 
         if newTag:
             updateDB(conn, cur, dataDB, newTag)
-            #send email,....
-            #check reply email,....
+            if not sendEmail(oldTag, newTag, newValue, oldValue, changeType, dataDB[1], dataDB[0]):
+                cur.execute(f'''DELETE FROM data WHERE time = {dataDB[3]}''')
+                conn.commit()
         else:
             updateDB(conn, cur, dataDB)
     

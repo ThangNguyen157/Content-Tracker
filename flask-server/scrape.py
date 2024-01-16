@@ -1,5 +1,6 @@
 import bs4
 import requests
+import urllib3
 
 class Scrape:
     def __init__(self, url):
@@ -16,11 +17,17 @@ class Scrape:
         try:
             data = requests.get(splash_url, params = params)
             data.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-        except requests.exceptions.RequestException as e:
+        #except 2 error at once
+        except requests.exceptions.ConnectionError as e:
             # Handle the error, which might include DNS resolution issues
-            return "DNS address could not be found"
+            return "DNS address could not be found. Connection error."
+        except requests.exceptions.MissingSchema as e:
+            print('invalid url. Must start with https:// or http://')
+            return 'invalid url. Must start with https:// or http://'
+        except urllib3.exceptions.MaxRetryError as e:
+            return 'invalid url.'
         if data.status_code < 200 or data.status_code >= 300:
-            return data.status_code
+            return int(data.status_code)
         soup = bs4.BeautifulSoup(data.text, "html.parser")
         return soup
     

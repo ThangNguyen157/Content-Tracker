@@ -1,13 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from scrape import Scrape
 from bs4 import BeautifulSoup
-import psycopg2
-import os
 from dotenv import load_dotenv
-import datetime
-from datetime import timezone, timedelta
-
+from datetime import timedelta
+import smtplib, ssl, datetime, os, psycopg2
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 #import geocoder
 #from timezonefinder import TimezoneFinder
 
@@ -30,10 +29,33 @@ def data():
     timezone_str = tf.timezone_at(lng=info.latlng[1], lat=info.latlng[0])
     print(timezone_str)'''
 
+    #test given email
+    message = MIMEMultipart()
+    message["From"] = os.getenv('SENDER_EMAIL')
+    message["To"] = data['clientEmail']
+    message["Subject"] = 'Test Email'
+    body = "This email is to verify that the given email is correct and you can start receiving emails regarding content changes from now on."
+    message.attach(MIMEText(body, "plain"))
+
+    # Establish a connection to the SMTP server
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            # Start the TLS connection
+            server.starttls()
+
+            # Login to your Gmail account
+            server.login(os.getenv('SENDER_EMAIL'), os.getenv('EMAIL_PASSWORD'))
+            # Send the email
+            server.sendmail(os.getenv('SENDER_EMAIL'), data['clientEmail'], message.as_string())
+    except Exception as e:
+        print('error sending email: '+ str(e))
+        return {"value": 1}
+    
+    #start initial scraping
     spider = Scrape(data['link'])
     content = spider.scrape()
-
-    if type(content) == int or content == "DNS address could not be found":
+    if type(content) == int or content == "DNS address could not be found. Connection error." or content ==  'invalid url. Must start with https:// or http://' or content == 'invalid url.':
+        print(content)
         return {"value":content}
     #get not timezone specific time
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)

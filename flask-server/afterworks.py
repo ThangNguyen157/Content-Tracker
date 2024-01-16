@@ -157,12 +157,10 @@ def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
             table.append(new_row)
     # Attach the HTML content
     message.attach(MIMEText(HTML, "html"))
-    #secure the connection with SSL
-    context = ssl.create_default_context()
 
     # Establish a connection to the SMTP server
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, context=context) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
             # Start the TLS connection
             server.starttls()
 
@@ -171,9 +169,9 @@ def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
             # Send the email
             server.sendmail(os.getenv('SENDER_EMAIL'), email, message.as_string())
     except Exception as e:
-        print('error sending email: '+ e)
-    finally:
-        return 0;
+        print('error sending email: '+ str(e))
+        return 0
+    return 1
 
 
 def main():
@@ -183,8 +181,14 @@ def main():
     cur = conn.cursor()
 
     while True:
+        cur.execute('''DELETE FROM data WHERE id IS NULL''')
+        cur.execute('''SELECT COUNT(*) FROM data''')
+        conn.commit()
+        if not cur.fetchone()[0]:
+            seconds = 6000
+            break
         seconds, dataDB = getSleepTime(conn, cur)
-        if (seconds > 4):
+        if (seconds > 5):
             break
         oldTag, newTag, newValue, oldValue, changeType = checkContent(dataDB)
 

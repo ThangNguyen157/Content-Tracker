@@ -1,18 +1,23 @@
 from scrape import Scrape
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from datetime import timedelta
-import time, copy, smtplib, os, psycopg2, datetime, ssl
+from datetime import timedelta, timezone
+import time, copy, smtplib, os, psycopg2, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import html
 
-def getSleepTime(conn, cur):
-    cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1''')
-    conn.commit()
-    dataDB = cur.fetchone()
+def getSleepTime(conn, cur, ttime):
+    
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
-    diff = dataDB[4] - notTimeZoneAware
-    return diff.total_seconds(), dataDB
+    #turn not timezone aware object into naive 
+    notTimeZoneAware2 = notTimeZoneAware.astimezone(timezone.utc).replace(tzinfo=None)
+    print(ttime)
+    print(notTimeZoneAware2)
+    
+    diff = ttime - notTimeZoneAware2
+    print(diff.total_seconds())
+    return diff.total_seconds()
 
 def checkContent(dataDB):
     newValue = []
@@ -26,48 +31,52 @@ def checkContent(dataDB):
     soup = data.getModifiedHTML(content)
 
     #find change in text
-    for index, id in enumerate(data[5]):
-        minisoup = BeautifulSoup(data[6][index], 'html.parser')
+    for index, id in enumerate(dataDB[5]):
+        minisoup = BeautifulSoup(dataDB[6][index], 'html.parser')
         minisoup.find(id=id).unwrap()
         tag = soup.find(id=id)
         parent = tag.parent
         parent.span.unwrap()
-        if len(newValue < index+1):
+        if len(newValue) < index+1:
                 oldTag.append([])
                 newTag.append([])
                 oldValue.append([])
                 newValue.append([])
                 changeType.append([])
-        if parent.get_text() != minisoup.get_text():
+        parenttext = ' '+ parent.get_text().strip() +' '
+        minisouptext = ' ' + minisoup.get_text().strip() + ' '
+        if  parenttext != minisouptext:
             oldTag[index].append(str(minisoup.prettify()))
             newTag[index].append(str(parent.prettify()))
-            oldValue[index].append(str(minisoup.get_text()))
-            newValue[index].append(str(parent.get_text()))
+            oldValue[index].append(minisouptext)
+            newValue[index].append(parenttext)
             changeType[index].append('Change in content')
-        if parent.name != minisoup.name:
+
+        if parent.name != minisoup.contents[0].name:
             oldTag[index].append(str(minisoup.prettify()))
             newTag[index].append(str(parent.prettify()))
-            oldValue[index].append(str(minisoup.name))
+            oldValue[index].append(str(minisoup.contents[0].name))
             newValue[index].append(str(parent.name))
             changeType[index].append('Change in tag name')
         
-        if len(parent.attrs) > len(minisoup.attrs):
+        if len(parent.attrs) > len(minisoup.contents[0].attrs):
+
             big = parent.attrs
-            small = minisoup.attrs
+            small = minisoup.contents[0].attrs
         else:
-            big = minisoup.atrrs
+            big = minisoup.contents[0].attrs
             small = parent.attrs
         for key in (list(big.keys())):
             if key not in list(small.keys()):
                 oldTag[index].append(str(minisoup.prettify()))
                 newTag[index].append(str(parent.prettify()))
                 oldValue[index].append('not having that attribute before or it was removed')
-                newValue[index].append(key+ ' = '+ big['key'])
+                newValue[index].append(key+ ' = '+ big[key])
                 changeType[index].append('new attribute added/removed')
-            elif minisoup.attrs[key] != parent.attrs[key]:
+            elif minisoup.contents[0].attrs[key] != parent.attrs[key]:
                 oldTag[index].append(str(minisoup.prettify()))
                 newTag[index].append(str(parent.prettify()))
-                oldValue[index].append(minisoup.attrs[key])
+                oldValue[index].append(minisoup.contents[0].attrs)
                 newValue[index].append(parent.attrs[key])
                 changeType[index].append("Change in attribute's value")
         if not newTag[-1]:
@@ -76,24 +85,34 @@ def checkContent(dataDB):
             oldValue.pop()
             newValue.pop()
             changeType.pop()
-
+    print(changeType)
     return newTag, oldTag, newValue, oldValue, changeType
 
-def updateDB(conn, cur, dataDB, newTag=[]):
+def updateDB(cur, dataDB, newTag=[]):
     #list is mutable so need to make a copy to avoid changing the original list
-    nv = copy.copy(newTag)
+    if newTag:
+        if newTag[0]:
+            nv = [newTag[i][0] for i in range(0, len(newTag))]
 
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
-    newNext_run = notTimeZoneAware + timedelta(minutes=dataDB[2])
-    for index, i in enumerate(dataDB[5]):
-        if i not in nv:
-            nv.insert(index, i)
+    #turn not timezone aware object into naive 
+    notTimeZoneAware2 = notTimeZoneAware.astimezone(timezone.utc).replace(tzinfo=None)
+    newNext_run = notTimeZoneAware2 + timedelta(minutes=dataDB[2])
 
     if not nv:
-        cur.execute(f'''UPDATE data SET next_run = {newNext_run} WHERE data.time = {dataDB[3]}''')
+        query = '''UPDATE data SET next_run = %s WHERE data.time = %s'''
+        value = (newNext_run, dataDB[3])
+        cur.execute(query, value)
     else:
-        cur.execute(f'''UPDATE data SET next_run = {newNext_run}, tag = {nv} WHERE data.time = {dataDB[3]}''')
-    conn.commit()
+        for index, i in enumerate(dataDB[5]):
+            if i not in nv:
+                nv.insert(index, dataDB[6][index])
+        print(type(nv))
+        # turn python list into a string that look like an array in the format {..., ..., ...} to match with the array type in the database
+        query = '''UPDATE data SET next_run = %s, tag = %s WHERE data.time = %s'''
+        
+        value = (newNext_run, nv, dataDB[3])
+        cur.execute(query, value)
 
 def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
     message = MIMEMultipart()
@@ -103,11 +122,17 @@ def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
     HTML = f'''
             <html>
             <head>
+            <style>
+                th, td {{border: 1px solid black;
+                padding: 8px;
+                text-align: left;}}
+            </style>
             </head>
             <body>
-            <p>New change(s) detected at<a href={url}>the website</a> you provided</p>
+            <p>New change(s) detected at<a href={url}> the website</a> you provided</p>
+            <p style='text-align: center; color: red; font-weight:bold; font-size:16px'>To stop receving email, please visit <a href="content-tracker.com">content-tracker.com</a> and enter your email at the bottom field.</p>
             <p style='text-align:center'>
-                <table>
+                <table style="border-collapse: collapse;width: 100%;">
                     <thead>
                         <tr>
                             <th>Change Type</th>
@@ -119,44 +144,46 @@ def sendEmail(oldTag, newTag, newValue, oldValue, changeType, email, url):
                     </thead>
                 </table>
             </p>
-            <p style='text-align: center; font-weight:bold; font-size:20px'>To stop receving email, please visit <a href="content-tracker.com">content-tracker.com</a> and enter your email at the bottom field.</p>
             </body>
             </html>
         '''
     soup = BeautifulSoup(HTML, 'html.parser')
     table = soup.find('table')
-    for l in oldTag:
+    for i in range(0, len(oldTag)):
         new_row = soup.new_tag('tr')
         td1 = soup.new_tag('td')
-        td1.string = changeType[i]
+        td1.string = changeType[i][0]
         td2 = soup.new_tag('td')
-        td2.string = oldValue[i]
+        td2.string = oldValue[i][0]
         td3 = soup.new_tag('td')
-        td3.string = newValue[i]
-        td4 = soup.new_tag('td', rowspan=str(i))
-        td4.string = oldTag[i]
-        td5 = soup.new_tag('td', rowspan=str(i))
-        td5.string = newTag[i]
+        td3.string = newValue[i][0]
+        td4 = soup.new_tag('td', rowspan=str(len(oldTag[i])))
+        #use html.escape to turn html format to html utility format so that it will not be render as html tag and be display as it is
+        td4.string = html.escape(oldTag[i][0])
+        td5 = soup.new_tag('td', rowspan=str(len(oldTag[i])))
+        td5.string = html.escape(newTag[i][0])
         new_row.append(td1)
         new_row.append(td2)
         new_row.append(td3)
         new_row.append(td4)
         new_row.append(td5)
         table.append(new_row)
-        for i in len(1, l):
+        print(new_row)
+        for l in range(1, len(oldTag[i])):
             new_row = soup.new_tag('tr')
             td1 = soup.new_tag('td')
-            td1.string = changeType[i]
+            td1.string = changeType[i][l]
             td2 = soup.new_tag('td')
-            td2.string = oldValue[i]
+            td2.string = oldValue[i][l]
             td3 = soup.new_tag('td')
-            td3.string = newValue[i]
+            td3.string = newValue[i][l]
             new_row.append(td1)
             new_row.append(td2)
             new_row.append(td3)
             table.append(new_row)
+            
     # Attach the HTML content
-    message.attach(MIMEText(HTML, "html"))
+    message.attach(MIMEText(str(soup.prettify()), "html"))
 
     # Establish a connection to the SMTP server
     try:
@@ -181,29 +208,46 @@ def main():
     cur = conn.cursor()
 
     while True:
+        #remove row with no value in id column
         cur.execute('''DELETE FROM data WHERE id IS NULL''')
+        conn.commit()
+
+        #handle empty row
         cur.execute('''SELECT COUNT(*) FROM data''')
         conn.commit()
         if not cur.fetchone()[0]:
             seconds = 6000
             break
-        seconds, dataDB = getSleepTime(conn, cur)
+
+        cur.execute('''SELECT * FROM data ORDER BY next_run ASC LIMIT 1''')
+        conn.commit()
+        dataDB = cur.fetchone()
+        print(dataDB)
+
+        seconds = getSleepTime(conn, cur, dataDB[4])
+        
         if (seconds > 5):
             break
-        oldTag, newTag, newValue, oldValue, changeType = checkContent(dataDB)
-
+        newTag, oldTag, newValue, oldValue, changeType = checkContent(dataDB)
+        print("11111111111111111111111111111")
+        print(newTag)
         if newTag:
-            updateDB(conn, cur, dataDB, newTag)
+            updateDB(cur, dataDB, newTag)
+            conn.commit()
             if not sendEmail(oldTag, newTag, newValue, oldValue, changeType, dataDB[1], dataDB[0]):
                 cur.execute(f'''DELETE FROM data WHERE time = {dataDB[3]}''')
                 conn.commit()
         else:
             updateDB(conn, cur, dataDB)
+            conn.commit()
     
     conn.close()
     cur.close()
-    time.sleep(seconds)
+    print('Sleeping for '+ str(seconds) + ' second(s)....')
+    return seconds
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        seconds = main()
+        time.sleep(seconds)

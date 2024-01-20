@@ -3,7 +3,7 @@ from flask_cors import CORS
 from scrape import Scrape
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from datetime import timedelta
+from datetime import timedelta, timezone
 import smtplib, ssl, datetime, os, psycopg2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -59,7 +59,9 @@ def data():
         return {"value":content}
     #get not timezone specific time
     notTimeZoneAware = datetime.datetime.now(tz=datetime.UTC)
-    newTime = notTimeZoneAware + timedelta(minutes=int(data['time']))
+    #turn not timezone aware object into naive 
+    notTimeZoneAware2 = notTimeZoneAware.astimezone(timezone.utc).replace(tzinfo=None)
+    newTime = notTimeZoneAware2 + timedelta(minutes=int(data['time']))
 
     load_dotenv()
     conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
@@ -76,10 +78,9 @@ def data():
                  tag text[])''')
     
     insertQuery ='''INSERT INTO data (url, email, interval, time, next_run) VALUES (%s, %s, %s, %s, %s)'''
-    value = (data['link'], data['clientEmail'], data['time'], notTimeZoneAware, newTime)
+    value = (data['link'], data['clientEmail'], data['time'], notTimeZoneAware2, newTime)
     #use place holder method to avoid SQL injecion
     cur.execute(insertQuery, value)
-
     conn.commit()
     conn.close()
     cur.close()
@@ -106,6 +107,8 @@ def tags():
     tags = getTagsByIDs(data['ids'])
     with open("../client/src/viewpage.html", 'w', encoding="utf-8") as file:
         file.write('')
+    
+    load_dotenv()
     conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
                         password=os.getenv('PASSWORD'), port=os.getenv('PORT'))
     cur = conn.cursor()
@@ -131,5 +134,29 @@ def tags():
     cur.close()
 
     return {}
+
+@app.route("/unregister", methods=['POST'])
+def unregister():
+    data = request.get_json()
+
+    load_dotenv()
+    conn = psycopg2.connect(host=os.getenv('HOST'), dbname=os.getenv('DBNAME'), user=os.getenv('USER'), 
+                        password=os.getenv('PASSWORD'), port=os.getenv('PORT'))
+    cur = conn.cursor()
+    query = '''DELETE FROM data WHERE email = %s'''
+    value=[data['clientEmail']]
+    cur.execute(query, value)
+    conn.commit()
+    #cur.rowcount return the number of row affected by the last query
+    if not cur.rowcount:
+        conn.close()
+        cur.close()
+        return {'value':"Email does not exist in the database. Please check the entered email."}
+    else:
+        conn.close()
+        cur.close()
+        return {'value':"Unregisted successfully"}
+    
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -16,7 +16,7 @@ class Scrape:
         
         try:
             data = requests.get(splash_url, params = params)
-            data.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+            #data.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
         #except 2 error at once
         except requests.exceptions.ConnectionError as e:
             # Handle the error, which might include DNS resolution issues
@@ -26,6 +26,8 @@ class Scrape:
             return 'invalid url. Must start with https:// or http://'
         except urllib3.exceptions.MaxRetryError as e:
             return 'invalid url.'
+        print("#################")
+        print(data.status_code)
         if data.status_code < 200 or data.status_code >= 300:
             return int(data.status_code)
         soup = bs4.BeautifulSoup(data.text, "html.parser")
@@ -52,19 +54,28 @@ class Scrape:
         indeces = []
         #content = list(html.find_all(string=True))
         content = list(soup.descendants)
-
         #filter to get only the text in the content list
         for index, value in enumerate(content):
             if type(value) == bs4.element.NavigableString and not value.isspace():
-                '''while '\n' in value:
-                    value = value.replace('\n', "")
-                text.append(value)'''
+                s = value.strip()
+                if len(s) > 0:
+                    print(11)
+                    if s[0].isspace():
+                        print(22)
+                        s = s[1:]
+                        
+                if len(s) > 0:
+                    if s[-1].isspace():
+                        print(33)
+                        s = s[:-1]
+                print("'" + s +"'")
                 #indeces.append(index)
                 value.wrap(soup.new_tag("span"))
                 value.parent['id'] = str(index)
                 #this.id return the id of the tag that the function is inside the onclick of
                 value.parent['onclick'] = "changeColor(this.id)"
                 value.parent['class'] = "change"
+                value.parent.string = s
                 
         newTag = soup.new_tag('script', src='viewpage.js')
         soup.head.append(newTag)

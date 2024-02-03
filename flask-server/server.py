@@ -4,7 +4,7 @@ from scrape import Scrape
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from datetime import timedelta, timezone
-import smtplib, datetime, os, pip install psycopg2
+import smtplib, datetime, os, psycopg2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 #import geocoder

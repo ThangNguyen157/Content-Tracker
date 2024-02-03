@@ -1,6 +1,6 @@
-function generateError() {
-  ReactDOM.render(<ErrorMessage/>, document.querySelector('#response'));
-}
+import ReactDOM from 'react-dom';
+import React from 'react';
+import './style.css';
 
 const MyForm = () => {
   // Use useState for each input field
@@ -35,7 +35,8 @@ const MyForm = () => {
       alert("Invalid email format.");
       return
     }
-    
+    var loading = document.getElementById('loading');
+    var display = document.getElementById('display');
     loading.innerHTML = '<span class="loading heroLoading"></span>';
     //'<span class="loading heroLoading"></span>' will automatically 
     //disappear when reload since it is written inside that tag in the DOM not inside the actual html file
@@ -54,12 +55,12 @@ const MyForm = () => {
         if ((typeof result['value']) === 'number' || result['value'] === "DNS address could not be found. Connection error.") {
           loading.innerHTML = '';
           display.innerHTML = 'ERROR: ' + result['value'] + '<br>The webpage might not exist or is currently down, or do not allow web scraping.<br>Please check the provided link, try again or choose another webpage.'
-        } else if (result['value'] === 'invalid url. Must start with https:// or http://' || result['value'] == 'invalid url.') {
+        } else if (result['value'] === 'invalid url. Must start with https:// or http://' || result['value'] === 'invalid url.') {
           loading.innerHTML = '';
           display.innerHTML = 'ERROR: ' + result['value'];
         } else if((result['value']) === 2) {
           loading.innerHTML = '';
-          display.innerHTML = 'ERROR.' + 'Can you verify your email. Please check.';
+          display.innerHTML = 'ERROR. Can you verify your email. Please check.';
         } else {
           loading.innerHTML = '';
           display.innerHTML = '<iframe id="externalFrame" src="viewpage.html" style="width:80%; height: 700px;"></iframe><br><button class="button color" onclick="sendSelected();">Finish</button>';
@@ -113,7 +114,7 @@ function sendSelected(){
     .catch(error => {
       console.error('Error:', error);
     });
-    location.reload();
+    window.location.reload();
 }
 
 const Form2 = () => {
@@ -129,6 +130,7 @@ const Form2 = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     console.log(email)
+    var display = document.getElementById('display');
     fetch('http://127.0.0.1:5000/unregister', {
       method: 'POST',
       headers: {

@@ -117,11 +117,9 @@ function sendSelected(){
 }
 
 const Form2 = () => {
-  var myStyle={
-    fontSize: '15px',
-    marginBottom: '3px',
+  var marg = {
+    margin: '20px',
   }
-
   const [email, setEmail] = React.useState('');
   const handleInputChange = (event) => {
     //the email input type will handle the input value. No need to sanitized the value.
@@ -153,9 +151,9 @@ const Form2 = () => {
   }
   return (
     <form onSubmit={handleSubmit}>
-      <label for ="email"><p class = "inputText" style={myStyle}>Want to stop receiving email?<br></br>Enter your email below to unregistser:</p></label>
-      <input type = "email" value={email} onChange={handleInputChange} id="email" name="email" required size = "50px"/><br></br>
-      <input type = "submit" value = "Submit" class = "button color"/>
+      <label for ="email"><span style={marg}>Want to stop receiving email? Enter your email to unregistser:</span></label>
+      <input type = "email" value={email} onChange={handleInputChange} id="email" name="email" required size = "50px"/>
+      <input type = "submit" value = "Submit" class = "button color" style={marg}/>
     </form>
   )
 }

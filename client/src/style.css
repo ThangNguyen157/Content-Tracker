@@ -100,14 +100,21 @@ body {
     width: 30px;
     height: 30px;
     animation: spinner 1s linear infinite;
-  }
-  @keyframes spinner {
+}
+@keyframes spinner {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
+}
 
-  .heroLoading {
+.heroLoading {
     display: flex;
     flex-direction: column;
     align-items: center;
-  }
+}
+
+.unregister {
+
+    display: inline-block;
+    border: 4px solid #3882F6;
+
+}

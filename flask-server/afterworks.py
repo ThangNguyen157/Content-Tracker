@@ -229,7 +229,7 @@ def main():
         if (seconds > 5):
             break
         newTag, oldTag, newValue, oldValue, changeType = checkContent(dataDB)
-        print("11111111111111111111111111111")
+
         print(newTag)
         if newTag:
             updateDB(cur, dataDB, newTag)

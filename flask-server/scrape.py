@@ -59,16 +59,13 @@ class Scrape:
             if type(value) == bs4.element.NavigableString and not value.isspace():
                 s = value.strip()
                 if len(s) > 0:
-                    print(11)
                     if s[0].isspace():
-                        print(22)
                         s = s[1:]
                         
                 if len(s) > 0:
                     if s[-1].isspace():
-                        print(33)
                         s = s[:-1]
-                print("'" + s +"'")
+                #print("'" + s +"'")
                 #indeces.append(index)
                 value.wrap(soup.new_tag("span"))
                 value.parent['id'] = str(index)
@@ -77,7 +74,7 @@ class Scrape:
                 value.parent['class'] = "change"
                 value.parent.string = s
                 
-        newTag = soup.new_tag('script', src='viewpage.js')
+        newTag = soup.new_tag('script', src='../src/viewpage.js')
         soup.head.append(newTag)
 
         newTag = soup.new_tag('style')

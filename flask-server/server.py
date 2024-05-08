@@ -34,7 +34,7 @@ def data():
     message["From"] = os.getenv('SENDER_EMAIL')
     message["To"] = data['clientEmail']
     message["Subject"] = 'Test Email'
-    body = "This email is to verify that the given email is correct and you can start receiving emails regarding content changes from now on."
+    body = "This email is to verify that the given email is correct, and you can start receiving emails regarding content changes from now on."
     message.attach(MIMEText(body, "plain"))
 
     # Establish a connection to the SMTP server
